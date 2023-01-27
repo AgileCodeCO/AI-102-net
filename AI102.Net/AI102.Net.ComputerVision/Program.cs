@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.CognitiveServices.Vision.ComputerVision;
+﻿using Azure.AI.FormRecognizer.DocumentAnalysis;
+using Microsoft.Azure.CognitiveServices.Vision.ComputerVision;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 
 namespace AI102.Net.ComputerVision;
@@ -25,6 +26,8 @@ class Program
             Endpoint = endpoint
         };
 
+        var documentAnalysisClient = new DocumentAnalysisClient(new Uri(endpoint), new Azure.AzureKeyCredential(subscriptionKey));
+
         IList<VisualFeatureTypes?> features = new List<VisualFeatureTypes?>
         {
             VisualFeatureTypes.Adult,
@@ -38,12 +41,13 @@ class Program
             VisualFeatureTypes.Tags
         };
 
-        string imagePath = "images/eiffel-tower.jpeg";
-
         Task.Run(async () =>
         {
-            await AnalyzeImage(client, features, imagePath);
-            await AnalyzeImageLandmarks(client, imagePath);
+            await AnalyzeImage(client, features, "images/eiffel-tower.jpeg");
+            await AnalyzeImageLandmarks(client, "images/eiffel-tower.jpeg");
+            await ReadHandwrittenText(client, "images/handwritten-text.png");
+            await ReadPrintedText(client, "images/printed_text.jpg");
+            await ReadFormText(documentAnalysisClient, "docs/invoice.pdf");
         });
 
         Console.ReadKey();
@@ -118,6 +122,65 @@ class Program
         Console.WriteLine();
         Console.WriteLine("Landmarks:");
         Console.WriteLine(result.Result);
+    }
+
+    static async Task ReadHandwrittenText(ComputerVisionClient client,
+        string imagePath)
+    {
+        Console.WriteLine("Reading handwritten text...");
+        using StreamReader imageStream = new StreamReader(imagePath);
+
+        var result = await client.ReadInStreamAsync(imageStream.BaseStream);
+
+        var operationId = result.OperationLocation.Split('/').Last();
+
+        ReadOperationResult readOperationResult;
+        do
+        {
+            readOperationResult = await client.GetReadResultAsync(Guid.Parse(operationId));
+        } while (readOperationResult.Status == OperationStatusCodes.Running ||
+                readOperationResult.Status == OperationStatusCodes.NotStarted);
+
+        foreach(var page in readOperationResult.AnalyzeResult.ReadResults)
+        {
+            foreach(var line in page.Lines)
+            {
+                Console.WriteLine(line.Text);
+            }
+        }
+
+        Console.WriteLine();
+    }
+
+    static async Task ReadPrintedText(ComputerVisionClient client,
+        string imagePath)
+    {
+        Console.WriteLine("Reading printed text...");
+        using StreamReader imageStream = new StreamReader(imagePath);
+
+        var result = await client.RecognizePrintedTextInStreamAsync(true, imageStream.BaseStream);
+
+        foreach (var region in result.Regions)
+            foreach (var line in region.Lines)
+                foreach (var word in line.Words)
+                    Console.WriteLine($"{word.Text} ({word.BoundingBox})");
+
+        Console.WriteLine();
+    }
+
+    static async Task ReadFormText(DocumentAnalysisClient client,
+        string documentPath)
+    {
+        Console.WriteLine("Reading form text...");
+        using StreamReader documentStream = new StreamReader(documentPath);
+
+        var result = await client.AnalyzeDocumentAsync(Azure.WaitUntil.Completed, "prebuilt-layout", documentStream.BaseStream);
+
+        foreach (var page in result.Value.Pages)
+            foreach (var line in page.Lines)
+                    Console.WriteLine($"{line.Content}");
+
+        Console.WriteLine();
     }
 }
 

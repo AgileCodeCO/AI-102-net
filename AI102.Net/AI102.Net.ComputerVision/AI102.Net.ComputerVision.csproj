@@ -13,9 +13,11 @@
   <ItemGroup>
     <None Remove="Microsoft.Azure.CognitiveServices.Vision.ComputerVision" />
     <None Remove="images\" />
+    <None Remove="Azure.AI.FormRecognizer" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.CognitiveServices.Vision.ComputerVision" Version="7.0.1" />
+    <PackageReference Include="Azure.AI.FormRecognizer" Version="4.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="images\" />
@@ -34,6 +36,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="images\sofi-stadium.jpeg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="images\handwritten-text.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="docs\invoice.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="images\printed_text.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
